@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="utf-8" ?>
+
+<base:BaseContentPage
+    x:Class="ThumbnailGenerator.Pages.ThumbnailPage"
+    x:DataType="viewmodels:ThumbnailViewModel"
+    x:TypeArguments="viewmodels:ThumbnailViewModel"
+    xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+    xmlns:base="clr-namespace:ThumbnailGenerator.Pages"
+    xmlns:mct="http://schemas.microsoft.com/dotnet/2022/maui/toolkit"
+    xmlns:viewmodels="clr-namespace:ThumbnailGenerator.ViewModels"
+    xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml">
+    <ContentPage.Resources>
+        <ResourceDictionary>
+            <mct:IsNotNullConverter x:Key="IsNotNullConverter" />
+        </ResourceDictionary>
+    </ContentPage.Resources>
+
+    <ContentPage.Content>
+        <ScrollView>
+            <VerticalStackLayout Padding="20,40" Spacing="20">
+                <Button Command="{Binding LoadVideoCommand}" Text="Select Video" />
+
+                <VerticalStackLayout IsVisible="{Binding Video, Converter={StaticResource IsNotNullConverter}}" Spacing="20">
+                    <Label Text="{Binding Video.FileName, FallbackValue='?'}" />
+
+                    <mct:MediaElement
+                        MediaFailed="OnMediaFailed"
+                        MediaOpened="OnMediaOpened"
+                        ShouldAutoPlay="True"
+                        x:Name="MediaElement" />
+
+                    <Button Command="{Binding LoadThumbnailCommand}" Text="Generate Thumbnail" />
+
+                    <Image
+                        HeightRequest="300"
+                        IsVisible="{Binding ThumbnailImageSource, Converter={StaticResource IsNotNullConverter}}"
+                        Source="{Binding ThumbnailImageSource}" />
+                </VerticalStackLayout>
+            </VerticalStackLayout>
+        </ScrollView>
+    </ContentPage.Content>
+</base:BaseContentPage>
