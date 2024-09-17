@@ -1,4 +1,5 @@
 using AVFoundation;
+using CoreGraphics;
 using CoreMedia;
 using Foundation;
 using UIKit;
@@ -11,7 +12,7 @@ public partial class ThumbnailService
     {
         try
         {
-            var image = GetVideoThumbnail(filePath);
+            var image = await GetVideoThumbnail(filePath);
 
             if (image is null)
             {
@@ -42,17 +43,33 @@ public partial class ThumbnailService
     }
 
     // https://gist.github.com/dannycabrera/7f83f168b0e07311ee0d
-    private UIImage? GetVideoThumbnail(string path)
+    private async Task<UIImage?> GetVideoThumbnail(string path)
     {
-        try 
+        try
         {
-            CMTime actualTime;
-            NSError outError;
-            using (var asset = AVAsset.FromUrl (NSUrl.FromFilename (path)))
-            using (var imageGen = new AVAssetImageGenerator (asset){ AppliesPreferredTrackTransform = true}) // https://stackoverflow.com/questions/5347800/avassetimagegenerator-provides-images-rotated
-            using (var imageRef = imageGen.CopyCGImageAtTime (new CMTime (1, 1), out actualTime, out outError)) {
-                return UIImage.FromImage (imageRef);
-            }	
+            var tcs = new TaskCompletionSource<UIImage?>();
+            
+            var nsUrl = NSUrl.FromFilename(path);
+            
+            using var asset = AVAsset.FromUrl (nsUrl);
+            
+            using var imageGenerator = new AVAssetImageGenerator (asset);
+            imageGenerator.AppliesPreferredTrackTransform = true;
+            
+            // https://github.com/xamarin/xamarin-macios/issues/18452
+            imageGenerator.GenerateCGImagesAsynchronously(new[] { NSValue.FromCMTime(new CMTime(1, 1)) }, (requestedTime, imageRef, actualTime, result, error) =>
+            {
+                if (error != null)
+                {
+                    tcs.SetException(new Exception(error.LocalizedDescription));
+                }
+                
+                var image = UIImage.FromImage(imageRef);
+                
+                tcs.SetResult(image);
+            });
+
+            return await tcs.Task;
         } 
         catch (Exception ex)
         {
